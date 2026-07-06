@@ -1,25 +1,37 @@
-from fastapi import FastAPI
+import blogging_api.config as config
 
 
-app = FastAPI()
-
-@app.get("/article")
+@config.APP.get("/article") -> list[dict]
 def get_articles():
-    pass
+    with config.CONN.transaction():
+        config.CONN.execute("""
+            SELECT * FROM article;
+        """)
 
-@app.get("/article/{id_}")
+        rows = config.CONN.fetchall()
+
+    return [{"id": id_, 
+             "title": title, 
+             "content": content, 
+             "publish_date": str(publish_date)} 
+            for (id_, title, content, publish_date) in rows]
+
+
+@config.APP.get("/article/{id_}")
 def get_article(id_: int):
-    pass
+    with config.CONN.transaction():
+        config.CONN.execute("SELECT * FROM article WHERE id
 
-@app.post("/article/")
+
+@config.APP.post("/article/")
 def create_article(title: str, content: str, date: str):
     pass
 
-@app.delete("/article/{id_}")
+@config.APP.delete("/article/{id_}")
 def delete_article(id_: int):
     pass
 
-@app.put("/article/{id_}")
+@config.APP.put("/article/{id_}")
 def edit_article(id_: int, title: str | None, content: str | None, 
                  date: str | None):
     pass

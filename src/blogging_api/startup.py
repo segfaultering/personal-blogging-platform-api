@@ -1,11 +1,16 @@
 import psycopg
+from fastapi import FastAPI
 
 import blogging_api.config as config
 
 
 def startup():
+    """Initializes the project environment"""
     config.CONN = __return_conn()
     __create_schema(config.CONN)
+    
+    config.APP = FastAPI()
+
 
 def __return_conn() -> psycopg.Connection:
     return psycopg.connect("dbname=blogging_api user=postgres", autocommit=True)
