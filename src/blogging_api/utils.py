@@ -1,13 +1,11 @@
 """Utility functions."""
-from pydantic import BaseModel
 
-from typing import Any
-from datetime import datetime
+from datetime import date
 
 from blogging_api.models import Article
 
 # Row tuple datatype
-Row = tuple[int, str, str, datetime.date]
+Row = tuple[int, str, str, date]
 
 def sql_to_pydantic(row: Row) -> Article:
     id_, title, content, publish_date = row

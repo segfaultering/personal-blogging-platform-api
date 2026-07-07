@@ -12,7 +12,7 @@ def startup():
 
 
 def __return_conn() -> psycopg.Connection:
-    return psycopg.connect("dbname=blogging user=postgres", autocommit=True)
+    return psycopg.connect("dbname=blogging user=mohsin", autocommit=True)
 
 def __create_schema(conn):
     """Initializes the schema for the database."""
