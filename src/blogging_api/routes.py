@@ -1,7 +1,7 @@
 import blogging_api.config as config
 
 
-@config.APP.get("/article") -> list[dict]
+@config.APP.get("/article")
 def get_articles():
     with config.CONN.cursor() as cur:
         with config.CONN.transaction():
