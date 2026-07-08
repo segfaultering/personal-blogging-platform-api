@@ -1,16 +1,23 @@
 from typing import Annotated
-from datetime import date
+from datetime import datetime
 
 from pydantic import BaseModel, Field
 
 
 class Article(BaseModel):
-    id_: Annotated[int, Field(alias="id")] 
+    "The base resource representation"
     title: Annotated[str, Field(max_length=30)]
-    content: str 
-    publish_date: date
+    content: str | None 
 
 
+class ArticleReq(Article):
+    "The client request representation of the article"
+    pass
 
+
+class ArticleResp(Article):
+    "The server response representation of the article"
+    article_id: int
+    publish_date: datetime 
 
 
