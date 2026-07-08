@@ -81,11 +81,17 @@ def edit_article(conn: psycopg.Connection,
 
 
 def delete_article(conn: psycopg.Connection,
-                   article: DELETE_ArticleRequest) -> ArticleResponse:
+                   article: DELETE_ArticleRequest) -> None:
     query = """
-    
+        DELETE FROM article 
+        WHERE id = %s;
     """
+    values = (article.article_id,)
 
+    with cur.cursor() as cur:
+        with cur.transaction():
+            cur.execute(query, values)
+    
 
 def __sql_to_pydantic(row: Row) -> ArticleResponse:  
     "Converts SQL row for an article to Pydantic."
