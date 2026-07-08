@@ -1,2 +1,1 @@
 CONN = None
-APP = None

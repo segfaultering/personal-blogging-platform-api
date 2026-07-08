@@ -2,7 +2,7 @@
 
 from datetime import date
 
-from blogging_api.models import Article
+from models import Article
 
 # Row tuple datatype
 Row = tuple[int, str, str, date]

@@ -8,7 +8,6 @@ def startup():
     """Initializes the project environment"""
     config.CONN = __return_conn()
     __create_schema(config.CONN)
-    config.APP = FastAPI()
 
 
 def __return_conn() -> psycopg.Connection:

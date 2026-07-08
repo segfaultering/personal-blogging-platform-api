@@ -1,12 +1,14 @@
-from fastapi import HTTPException
+from fastapi import HTTPException, FastAPI
 
-import blogging_api.config as config
+import config
 from utils import sql_to_pydantic
 from models import Article
 
 from datetime import date
 
-@config.APP.get("/article")
+app = FastAPI()
+
+@app.get("/article")
 def get_articles() -> list[Article]:
     with config.CONN.cursor() as cur:
         with config.CONN.transaction():
@@ -16,7 +18,7 @@ def get_articles() -> list[Article]:
     return [sql_to_pydantic(row) for row in rows]
 
 
-@config.APP.get("/article/{id_}")
+@app.get("/article/{id_}")
 def get_article(id_: int) -> Article:
     with config.CONN.cursor() as cur:
         with config.CONN.transaction():
@@ -27,7 +29,7 @@ def get_article(id_: int) -> Article:
 
     return sql_to_pydantic(row)    
 
-@config.APP.post("/article/")
+@app.post("/article/")
 def create_article(title: str, content: str, date: date) -> Article:
     with config.CONN.cursor() as cur:
         with config.CONN.transaction():
@@ -48,7 +50,7 @@ def create_article(title: str, content: str, date: date) -> Article:
     return sql_to_pydantic((id_, title, content, date))
 
 
-@config.APP.delete("/article/{id_}", )
+@app.delete("/article/{id_}", )
 def delete_article(id_: int, status_code=204):
     with config.CONN.cursor() as cur:
         with config.CONN.transaction():
@@ -59,7 +61,7 @@ def delete_article(id_: int, status_code=204):
             cur.execute("DELETE FROM article WHERE id = (%s);", (id_, ))
 
 
-@config.APP.patch("/article/{id_}", status_code=200)
+@app.patch("/article/{id_}", status_code=200)
 def edit_article(id_: int, title: str | None, content: str | None):
     with config.CONN.cursor() as cur:
         with config.CONN.transaction():
