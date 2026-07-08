@@ -17,7 +17,7 @@ def return_notes(conn: psycopg.Connection) -> list[ArticleResponse]:
             cur.execute(query)
             rows = cur.fetchall()
 
-    return [__sql_to_pydantic(row) for row in rows]
+            return [__sql_to_pydantic(row) for row in rows]
 
 
 def return_note(conn: psycopg.Connection,
@@ -33,7 +33,7 @@ def return_note(conn: psycopg.Connection,
         with conn.transaction():
             cur.execute(query, values)
     
-    return __sql_to_pydantic(cur.fetchone())
+            return __sql_to_pydantic(cur.fetchone())
 
 
 def create_note(conn: psycopg.Connection,
@@ -41,15 +41,50 @@ def create_note(conn: psycopg.Connection,
 
     create_query = """
         INSERT INTO article (title, content, date)
-        VALUES (%s, %s);
+        VALUES (%s, %s, %s);
     """
-    retrieve_query = 
-    values = (article.title, article.content)
+    retrieve_query = """
+        SELECT * FROM article
+        WHERE title = %s;
+    """
+    insert_values = (article.title, article.content, datetime.date())
+    retrieve_values = (article.title)
 
     with conn.cursor() as cur:
         with conn.transaction():
-            cur.execute(query, values)
+            cur.execute(insert_query, insert_values)
+            cur.execute(retrieve_query, retrieve_values)
 
+            return __sql_to_pydantic(cur.fetchone())
+
+
+def edit_article(conn: psycopg.Connection,
+                 article: PUT_ArticleRequest) -> ArticleResponse: 
+    put_query = """
+        UPDATE article SET 
+        title = %s AND content = %s WHERE
+        id = %s;
+    """
+    retrieve_query = """
+        SELECT * FROM article
+        WHERE id = %s;
+    """
+    put_values = (article.title, article.content, article.article_id)
+    retrieve_values = (article.article_id)
+
+    with conn.cursor() as cur:
+        with conn.transaction():
+            cur.execute(put_query, put_values)
+            cur.execute(retrieve_query, retrieve_values)
+            
+            return __sql_to_pydantic(cur.fetchone())
+
+
+def delete_article(conn: psycopg.Connection,
+                   article: DELETE_ArticleRequest) -> ArticleResponse:
+    query = """
+    
+    """
 
 
 def __sql_to_pydantic(row: Row) -> ArticleResponse:  
