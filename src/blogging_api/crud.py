@@ -21,13 +21,13 @@ def return_notes(conn: psycopg.Connection) -> list[ArticleResponse]:
 
 
 def return_note(conn: psycopg.Connection,
-                article: GET_ArticleRequest) -> ArticleResponse:
+                article_id: int) -> ArticleResponse:
     "Returns a singular article from its id"
     query = """
         SELECT * FROM article 
         WHERE id = %s;
     """
-    values = article.article_id  
+    values = article_id  
 
     with conn.cursor() as cur:
         with conn.transaction():
@@ -37,7 +37,7 @@ def return_note(conn: psycopg.Connection,
 
 
 def create_note(conn: psycopg.Connection,
-                article: POST_ArticleRequest) -> ArticleResponse:
+                article_title: str, article_content: str | None) -> ArticleResponse:
 
     create_query = """
         INSERT INTO article (title, content, date)
@@ -47,8 +47,8 @@ def create_note(conn: psycopg.Connection,
         SELECT * FROM article
         WHERE title = %s;
     """
-    insert_values = (article.title, article.content, datetime.date())
-    retrieve_values = (article.title)
+    insert_values = (article_title, article_content, datetime.date())
+    retrieve_values = (article_title)
 
     with conn.cursor() as cur:
         with conn.transaction():

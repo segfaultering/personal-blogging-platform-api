@@ -1,91 +1,55 @@
-from fastapi import HTTPException, FastAPI
+from fastapi import HTTPException, FastAPI, Depends, Path, status
+import psycopg
 
 import config
-from utils import sql_to_pydantic
-from models import Article
+from utils import get_db_conn
+from models import ArticleCreate, ArticleResponse
 
 from datetime import date
 
+
+# Connection type
+type Connection = Annotated[psycopg.Connection, Depends(get_db_conn)]
+
 app = FastAPI()
 
-@app.get("/article")
-def get_articles() -> list[Article]:
-    with config.CONN.cursor() as cur:
-        with config.CONN.transaction():
-            cur.execute("SELECT * FROM article;")
-            rows = cur.fetchall()
 
-    return [sql_to_pydantic(row) for row in rows]
-
-
-@app.get("/article/{id_}")
-def get_article(id_: int) -> Article:
-    with config.CONN.cursor() as cur:
-        with config.CONN.transaction():
-            cur.execute("SELECT * FROM article WHERE id = (%s)", (id_, ))
-        
-        if not (row := cur.fetchone()):
-            raise HTTPException(status_code=404, detail="The requested resource is not found!")
-
-    return sql_to_pydantic(row)    
-
-@app.post("/article/")
-def create_article(title: str, content: str, date: date) -> Article:
-    with config.CONN.cursor() as cur:
-        with config.CONN.transaction():
+# GET
+@app.get("/article/", status_code=status.HTTP_200_OK)
+def return_all_articles(db_conn: Connection) -> list[ArticleResponse]
+    with db_conn.cursor() as cur:
+        with db_conn.transaction():
             cur.execute("""
-                INSERT INTO article (title, content, date) 
-                VALUES (%s, %s, %s);
-            """, (title, content, date))
+                SELECT * FROM article;
+            """)
 
+            return [sql_to_pydantic(row) for row in cur.fetchall()]
+
+@app.get("/article/{article_id}", status_code=status.HTTP_200_OK)
+def return_article(db_conn: Connection, article_id: int) -> ArticleResponse:
+    with db_conn.cursor() as cur:
+        with db_conn.transaction():
             cur.execute("""
-                SELECT id from article WHERE 
-                title = (%s) AND
-                content = (%s) AND 
-                date = (%s);
-            """, (title, content, date))
+                SELECT * FROM article
+                WHERE id = %s
+            """, (article_id,))
+            
+            if not (any(row := cur.fetchone())):
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="The requested resource was not found!"
+                )
+           
+            return sql_to_pydantic(row)
+            
 
-            id_ = cur.fetchone()
-
-    return sql_to_pydantic((id_, title, content, date))
-
-
-@app.delete("/article/{id_}", )
-def delete_article(id_: int, status_code=204):
-    with config.CONN.cursor() as cur:
-        with config.CONN.transaction():
-            cur.execute("SELECT * FROM article WHERE id = (%s)", (id_, ))
-            if not cur.fetchone():
-                    raise HTTPException(status_code=404, detail="The resource to be deleted doesn't exist!")
-
-            cur.execute("DELETE FROM article WHERE id = (%s);", (id_, ))
+# POST
+@app.post("/article/, status_code=status.HTTP_201_CREATED)
+def create_article(payload: ArticleCreate) -> ArticleResponse:
+    
 
 
-@app.patch("/article/{id_}", status_code=200)
-def edit_article(id_: int, title: str | None, content: str | None):
-    with config.CONN.cursor() as cur:
-        with config.CONN.transaction():
 
-            cur.execute("SELECT * FROM article WHERE id = (%s);", (id_, ))
-            if not cur.fetchone():
-                raise HTTPException(status_code=404, detail="The requested resource doesn't exist!")
-
-            query = "UPDATE article SET"
-            end = " WHERE id = (%s);"
-
-            if title and content:
-                query += " title = (%s), content = (%s)" + end
-                tup = (query, (title, content, id_))
-
-            if title:
-                query += " title = (%s)" + end
-                tup = (query, (title, id_))
-
-            elif content: 
-                query += " content = (%s)" + end
-                tup = (query, (content, id_))
-
-            cur.execute(*tup)
 
 
 

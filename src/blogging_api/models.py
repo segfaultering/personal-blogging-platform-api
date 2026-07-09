@@ -1,30 +1,50 @@
 from typing import Annotated
 from datetime import date
 
+from typing import Annotated
+
 from pydantic import BaseModel, Field
 
 
-# Client-side Requests
-class POST_ArticleRequest(BaseModel):
-    title: str
-    content: str | None
+class ArticleBase(BaseModel):
+    title: Annotated[str, Field(
+        min_length=8,
+        max_length=64
+    )]
 
-class GET_ArticleRequest(BaseModel):
-    article_id: int
+    content: Annotated[str | None, Field(
+        default=None,
+        min_length=0,
+        max_length=10_000
+    )]
 
-class DELETE_ArticleRequest(BaseModel):
-    article_id: int
 
-class PUT_ArticleRequest(BaseModel):
-    article_id: int
-    title: str | None
-    content: str | None
+class ArticleCreate(ArticleBase):
+    ...
+
+
+class ArticleUpdate(BaseModel): 
+    title: Annotated[str | None, Field(
+        default=None,
+        min_length=8,
+        max_length=64
+    )]
+
+    content: Annotated[str | None, Field(
+        default=None,
+        min_length=0,
+        max_length=10_000
+    )]
 
 # Server-side Response
-class ArticleResponse(BaseModel):
-    article_id: int
-    title: str
-    content: str | None
-    publish_date: date 
+class ArticleResponse(ArticleBase):
+    article_id: Annotated[int, Field(
+        frozen=True
+        gt=0,
+    )]
+
+    publish_date: Annotated[date, Field(
+        default_factory=datetime.date 
+    )]
 
 
