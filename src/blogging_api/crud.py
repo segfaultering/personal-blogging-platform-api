@@ -1,107 +1,106 @@
-from datetime import datetime
-
 import psycopg
+from fastapi import HTTPException
 
 from models import ArticleRequest, ArticleResponse
+from utils import sql_to_pydantic
 
 
-type Row = tuple[int, str, str, datetime]
-
-
-def return_notes(conn: psycopg.Connection) -> list[ArticleResponse]:
-    "Return all notes in the db."
-    query = "SELECT * FROM article;" 
-
+def return_articles(conn: psycopg.Connection) -> list[ArticleResponse]:
+    "Return all articles in the db."
     with conn.cursor() as cur:
         with conn.transaction():
-            cur.execute(query)
-            rows = cur.fetchall()
+            cur.execute("""
+                SELECT * FROM article;
+            """)
 
-            return [__sql_to_pydantic(row) for row in rows]
+            return [sql_to_pydantic(row) for row in cur.fetchall()]
 
 
-def return_note(conn: psycopg.Connection,
+def return_article(conn: psycopg.Connection,
                 article_id: int) -> ArticleResponse:
-    "Returns a singular article from its id"
-    query = """
-        SELECT * FROM article 
-        WHERE id = %s;
-    """
-    values = article_id  
+    with conn.cursor() as cur:
+        with conn.transaction():
+            cur.execute("""
+                SELECT * FROM article
+                WHERE id = %s
+            """, (article_id,))
+            
+            if not (any(row := cur.fetchone())):
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="The requested resource was not found!"
+                )
+           
+            return sql_to_pydantic(row)
+
+
+def create_article(conn: psycopg.Connection,
+                payload: ArticleCreate) -> ArticleResponse:
 
     with conn.cursor() as cur:
         with conn.transaction():
-            cur.execute(query, values)
-    
-            return __sql_to_pydantic(cur.fetchone())
+            cur.execute("""
+                INSERT INTO article (title, content)
+                VALUES (%s, %s);
+            """, (payload.title, payload.content))
 
+            cur.execute("""
+                SELECT * FROM article
+                WHERE title = %s;
+            """, (payload.title,))
 
-def create_note(conn: psycopg.Connection,
-                article_title: str, article_content: str | None) -> ArticleResponse:
-
-    create_query = """
-        INSERT INTO article (title, content, date)
-        VALUES (%s, %s, %s);
-    """
-    retrieve_query = """
-        SELECT * FROM article
-        WHERE title = %s;
-    """
-    insert_values = (article_title, article_content, datetime.date())
-    retrieve_values = (article_title)
-
-    with conn.cursor() as cur:
-        with conn.transaction():
-            cur.execute(insert_query, insert_values)
-            cur.execute(retrieve_query, retrieve_values)
-
-            return __sql_to_pydantic(cur.fetchone())
+            return sql_to_pydantic(cur.fetchone())
 
 
 def edit_article(conn: psycopg.Connection,
-                 article: PUT_ArticleRequest) -> ArticleResponse: 
-    put_query = """
-        UPDATE article SET 
-        title = %s AND content = %s WHERE
-        id = %s;
-    """
-    retrieve_query = """
-        SELECT * FROM article
-        WHERE id = %s;
-    """
-    put_values = (article.title, article.content, article.article_id)
-    retrieve_values = (article.article_id)
+                 article: ArticleUpdate) -> ArticleResponse: 
 
     with conn.cursor() as cur:
-        with conn.transaction():
-            cur.execute(put_query, put_values)
-            cur.execute(retrieve_query, retrieve_values)
+        with conn.transaction()
+            cur.execute("""
+                SELECT EXISTS(
+                    SELECT 1 FROM article 
+                    WHERE id = %s
+                );
+            """, (article_id,))
             
-            return __sql_to_pydantic(cur.fetchone())
+            if not (cur.fetchone()):
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="The requested resource was not found!"
+                )
+
+            cur.execute("""
+                UPDATE article SET 
+                title = %s AND content = %s
+                WHERE id = %s;
+            """, (payload.title, payload.content, article_id))
+
+            cur.execute("""
+                SELECT * FROM article 
+                WHERE id = %s;
+            """, (article_id,))
+
+            return sql_to_pydantic(cur.fetchone())  
 
 
 def delete_article(conn: psycopg.Connection,
                    article: DELETE_ArticleRequest) -> None:
-    query = """
-        DELETE FROM article 
-        WHERE id = %s;
-    """
-    values = (article.article_id,)
+    with conn.cursor() as cur:
+        with conn.transaction():
+            cur.execute("""
+                SELECT EXISTS 
+                (SELECT 1 FROM article WHERE id = %s);
+            """, (article_id,))
+            
+            if not (cur.fetchone()):
+                raise HTTPException(status_code=HTTP_404_NOT_FOUND,
+                                    detail="The resource to be deleted was not found!")
 
-    with cur.cursor() as cur:
-        with cur.transaction():
-            cur.execute(query, values)
+            cur.execute("""
+                DELETE FROM article WHERE id = %s;
+            """, (article_id,))
     
-
-def __sql_to_pydantic(row: Row) -> ArticleResponse:  
-    "Converts SQL row for an article to Pydantic."
-    article_id, title, content, publish_date = row
-    return ArticleResponse(
-        article_id=article_id,
-        title=title,
-        content=content,
-        publish_date=publish_date
-    )
 
 
 
