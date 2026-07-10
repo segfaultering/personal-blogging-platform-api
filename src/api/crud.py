@@ -61,23 +61,37 @@ def edit_article(conn: psycopg.Connection,
     with conn.cursor() as cur:
         with conn.transaction():
             cur.execute("""
-                SELECT EXISTS(
-                    SELECT 1 FROM article 
-                    WHERE id = %s
-                );
+                SELECT * FROM article
+                WHERE id = %s;
             """, (article_id,))
             
-            if not (cur.fetchone()):
+            row = cur.fetchone()
+            if not (row):
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="The requested resource was not found!"
                 )
 
-            cur.execute("""
-                UPDATE article SET 
-                title = %s AND content = %s
-                WHERE id = %s;
-            """, (payload.title, payload.content, article_id))
+            if (payload.title and payload.content):
+                cur.execute("""
+                    UPDATE article SET
+                    title = %s, content = %s
+                    WHERE id = %s;
+                """, (payload.title, payload.content, article_id))
+
+            elif payload.title:
+                cur.execute("""
+                    UPDATE article SET 
+                    title = %s 
+                    WHERE id = %s;
+                """, (payload.title, article_id))
+            
+            else:
+                cur.execute("""
+                    UPDATE article SET
+                    content = %s 
+                    WHERE id = %s;
+                """, (payload.content, article_id))
 
             cur.execute("""
                 SELECT * FROM article 

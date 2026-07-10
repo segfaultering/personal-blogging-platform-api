@@ -31,7 +31,7 @@ def return_article(
     return crud.return_article(db_conn, article_id)            
 
 # POST
-@app.post("/article/, status_code=status.HTTP_201_CREATED")
+@app.post("/article/", status_code=status.HTTP_201_CREATED, response_model=ArticleResponse)
 def create_article(db_conn: Connection, payload: ArticleCreate) -> ArticleResponse:
     return crud.create_article(db_conn, payload)
 
