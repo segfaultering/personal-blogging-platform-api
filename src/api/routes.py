@@ -15,7 +15,7 @@ app = FastAPI()
 
 
 # GET
-@app.get("/article/", status_code=status.HTTP_200_OK, response_model=ArticleResponse)
+@app.get("/article/", status_code=status.HTTP_200_OK, response_model=list[ArticleResponse])
 def return_articles(db_conn: Connection) -> list[ArticleResponse]:
     return crud.return_articles(db_conn)
 
@@ -28,7 +28,7 @@ def return_article(
             gt=0
         )]) -> ArticleResponse:
 
-    crud.return_article(db_conn, article_id)            
+    return crud.return_article(db_conn, article_id)            
 
 # POST
 @app.post("/article/, status_code=status.HTTP_201_CREATED")
@@ -47,7 +47,7 @@ def delete_article(
     crud.delete_article(db_conn, article_id)
 
 # PATCH
-@app.patch("/article/{article_id}", status_code=status.HTTP_200_OK)
+@app.patch("/article/{article_id}", status_code=status.HTTP_200_OK, response_model=ArticleResponse)
 def update_article(
         db_conn: Connection, 
         payload: ArticleUpdate,

@@ -1,3 +1,5 @@
+from datetime import date
+
 import psycopg
 from fastapi import HTTPException, status
 
@@ -25,7 +27,7 @@ def return_article(conn: psycopg.Connection,
                 WHERE id = %s
             """, (article_id,))
             
-            if not (any(row := cur.fetchone())):
+            if not (row := cur.fetchone()):
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="The requested resource was not found!"
@@ -40,9 +42,9 @@ def create_article(conn: psycopg.Connection,
     with conn.cursor() as cur:
         with conn.transaction():
             cur.execute("""
-                INSERT INTO article (title, content)
-                VALUES (%s, %s);
-            """, (payload.title, payload.content))
+                INSERT INTO article (title, content, publish_date)
+                VALUES (%s, %s, %s);
+            """, (payload.title, payload.content, date.today()))
 
             cur.execute("""
                 SELECT * FROM article
