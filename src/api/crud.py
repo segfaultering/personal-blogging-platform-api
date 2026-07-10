@@ -1,8 +1,8 @@
 import psycopg
-from fastapi import HTTPException
+from fastapi import HTTPException, status
 
-from models import ArticleRequest, ArticleResponse
-from utils import sql_to_pydantic
+from src.api.models import ArticleCreate, ArticleResponse, ArticleUpdate
+from src.api.utils import sql_to_pydantic
 
 
 def return_articles(conn: psycopg.Connection) -> list[ArticleResponse]:
@@ -53,10 +53,11 @@ def create_article(conn: psycopg.Connection,
 
 
 def edit_article(conn: psycopg.Connection,
-                 article: ArticleUpdate) -> ArticleResponse: 
+                 payload: ArticleUpdate,
+                 article_id: int) -> ArticleResponse: 
 
     with conn.cursor() as cur:
-        with conn.transaction()
+        with conn.transaction():
             cur.execute("""
                 SELECT EXISTS(
                     SELECT 1 FROM article 
@@ -85,7 +86,7 @@ def edit_article(conn: psycopg.Connection,
 
 
 def delete_article(conn: psycopg.Connection,
-                   article: DELETE_ArticleRequest) -> None:
+                   article_id: int) -> None:
     with conn.cursor() as cur:
         with conn.transaction():
             cur.execute("""
@@ -94,7 +95,7 @@ def delete_article(conn: psycopg.Connection,
             """, (article_id,))
             
             if not (cur.fetchone()):
-                raise HTTPException(status_code=HTTP_404_NOT_FOUND,
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                     detail="The resource to be deleted was not found!")
 
             cur.execute("""

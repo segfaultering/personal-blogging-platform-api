@@ -2,11 +2,11 @@ from datetime import date
 
 import psycopg
 
-from models import ArticleResponse
+from src.api.models import ArticleResponse
 
-type Row = tuple[int, str, str | None, datetime.date]
+type Row = tuple[int, str, str | None, date] | None
 
-def get_db_conn() -> pyscopg.Connection:
+def get_db_conn() -> psycopg.Connection:
     conn = psycopg.connect("dbname=blogging user=mohsin", autocommit=True)
     try:
         yield conn
@@ -20,7 +20,7 @@ def sql_to_pydantic(row: Row) -> ArticleResponse:
         article_id=article_id,
         title=title,
         content=content,
-        pulish_date=publish_date
+        publish_date=publish_date
     )
 
 

@@ -1,6 +1,4 @@
-from typing import Annotated
 from datetime import date
-
 from typing import Annotated
 
 from pydantic import BaseModel, Field
@@ -39,12 +37,10 @@ class ArticleUpdate(BaseModel):
 # Server-side Response
 class ArticleResponse(ArticleBase):
     article_id: Annotated[int, Field(
-        frozen=True
+        frozen=True,
         gt=0,
     )]
 
-    publish_date: Annotated[date, Field(
-        default_factory=datetime.date 
-    )]
+    publish_date: date
 
 
